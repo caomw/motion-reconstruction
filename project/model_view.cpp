@@ -1,7 +1,7 @@
 
 #include "model_view.h"
 
-
+using namespace std;
 float * vertices, * normals;
 
 float ** heads_v, ** heads_n;
@@ -9,6 +9,10 @@ float ** heads_v, ** heads_n;
 const int d=39;
 
 ModelOBJ object,heads[d];
+
+// function which loads the blendshapes
+// then compute the normals / vertices, and preprocess them to easily display composite
+// blendshapes in the draw part
 
 void load()
 {
@@ -52,7 +56,6 @@ void load()
 	heads[36].import("../data/blendshapes/blendshapes/36_ULipU_CAU1025.obj");
 	heads[37].import("../data/blendshapes/blendshapes/37_ULipU_L_LAU1025.obj");
 	heads[38].import("../data/blendshapes/blendshapes/38_ULipU_R_RAU1025.obj");
-	//heads[39].import("../data/blendshapes/blendshapes/01_Blink_R_AU45.obj");
 
 
 	heads_v=new float*[d];
@@ -60,22 +63,50 @@ void load()
 
 	const int * v, * o; v=object.getIndexBuffer();
 
-	//int d=39;
-
 	for(int j=0;j<d;j++)
 	{
 		heads_v[j]=new float[object.getNumberOfVertices()*3];
 		heads_n[j]=new float[object.getNumberOfVertices()*3];
 		for(int i=0;i<object.getMesh(0).triangleCount*3;i++)
-		 {
-			 heads_v[j][v[i]*3]=heads[j].getVertexBuffer()[v[i]].position[0]-object.getVertexBuffer()[v[i]].position[0];
-			 heads_v[j][v[i]*3+1]=heads[j].getVertexBuffer()[v[i]].position[1]-object.getVertexBuffer()[v[i]].position[1];
-			 heads_v[j][v[i]*3+2]=heads[j].getVertexBuffer()[v[i]].position[2]-object.getVertexBuffer()[v[i]].position[2];
-			 heads_n[j][v[i]*3]=heads[j].getVertexBuffer()[v[i]].normal[0];
-			 heads_n[j][v[i]*3+1]=heads[j].getVertexBuffer()[v[i]].normal[1];
-			 heads_n[j][v[i]*3+2]=heads[j].getVertexBuffer()[v[i]].normal[2];
+		{
+			heads_v[j][v[i]*3]=heads[j].getVertexBuffer()[v[i]].position[0]-object.getVertexBuffer()[v[i]].position[0];
+			heads_v[j][v[i]*3+1]=heads[j].getVertexBuffer()[v[i]].position[1]-object.getVertexBuffer()[v[i]].position[1];
+			heads_v[j][v[i]*3+2]=heads[j].getVertexBuffer()[v[i]].position[2]-object.getVertexBuffer()[v[i]].position[2];
+			heads_n[j][v[i]*3]=heads[j].getVertexBuffer()[v[i]].normal[0];
+			heads_n[j][v[i]*3+1]=heads[j].getVertexBuffer()[v[i]].normal[1];
+			heads_n[j][v[i]*3+2]=heads[j].getVertexBuffer()[v[i]].normal[2];
 		}
 	}
+
+
+	// Computing the smallset marker pos using blendshape and barycentric coordinates
+	// May be used to convert the whole database and input prior to any
+	// proces. step
+
+	ifstream file;
+	file.open("../data/smallset.fsm",ios::in);
+	if(!file) printf("Error loading file");
+	bool keep=true;
+	int indices_b[3];
+	double coeff_b[3];
+	while(keep)
+	{
+		for(int i=0;i<3;i++)
+			if(!(file>>indices_b[i])) keep=false;
+		for(int i=0;i<3;i++)
+			if(!(file>>coeff_b[i])) keep=false;
+		double coord[3]={0,0,0};
+		for(int i=0;i<3;i++)
+		{
+			for(int j=0;j<3;j++)
+			{
+				coord[j]+=object.getVertexBuffer()[indices_b[i]].position[j]*coeff_b[i];//object.getIndexBuffer()[indices_b[i]]].position[j]*coeff_b[j];
+			}
+		}
+		cout <<"x: "<<coord[0]<<"y:"<<coord[1]<<"z:"<<coord[2]<<"\n";
+
+	}
+
 
 	vertices=new float[object.getNumberOfVertices()*3];
 	normals=new float[object.getNumberOfVertices()*3];
@@ -84,84 +115,88 @@ void load()
 }
 
 
+// Display the face according to view and the control points ps
+
 void face_disp(int view, double * ps)
-	{
+{
 
 	int angle = 0;
 
 	glEnable(GL_BLEND); //enable the blending
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glLoadIdentity();
 	//gluLookAt( 0,0,300, 0,0,0, 0,1,0);
-	if(view==0)
+	/*if(view==0)
 	gluLookAt( -200,0,500, 0,0,0, 0,1,0);
-	else if(view==1)
-	gluLookAt( 00,0,500, 0,0,0, 0,1,0);
-	else if(view==2)
-	gluLookAt( 200,0,500, 0,0,0, 0,1,0);
-	glPushMatrix();
-	if(view==0)
+	else if(view==1)*/
+	gluLookAt( 00,0,-500, 0,0,0, 0,-1,0);
+	/*else if(view==2)
+	gluLookAt( 200,0,500, 0,0,0, 0,1,0);*/
+	//glPushMatrix();
+	/*if(view==0)
 	glTranslatef(-200,0,0);
 	else if(view==1)
 	glTranslatef(00,0,0);
 	else if(view==2)
-	glTranslatef(200,0,0);
-		glRotatef(angle,0,1,0);
-		glRotatef(180,1,0,0);
+	glTranslatef(200,0,0);*/
+	glRotatef(angle,0,1,0);
 
-		float color = 10;
-
-
-		 const int * v, * o; v=object.getIndexBuffer();
+	float color = 10;
 
 
-
-		 glBegin(GL_TRIANGLES);
-		 for(int i=0;i<object.getMesh(0).triangleCount*3;i++)
-		 {
-			 /*vertices[v[i]*3]=object.getVertexBuffer()[v[i]].position[0];
-			 vertices[v[i]*3+1]=object.getVertexBuffer()[v[i]].position[1];
-			 vertices[v[i]*3+2]=object.getVertexBuffer()[v[i]].position[2];
-			 normals[v[i]*3]=object.getVertexBuffer()[v[i]].normal[0];
-			 normals[v[i]*3+1]=object.getVertexBuffer()[v[i]].normal[1];
-			 normals[v[i]*3+2]=object.getVertexBuffer()[v[i]].normal[2];*/
-
-			 linearcomb(ps,&vertices[v[i]*3],v[i]);
-			 normals[v[i]*3]=object.getVertexBuffer()[v[i]].normal[0];
-			 normals[v[i]*3+1]=object.getVertexBuffer()[v[i]].normal[1];
-			 normals[v[i]*3+2]=object.getVertexBuffer()[v[i]].normal[2];
+	const int * v, * o; v=object.getIndexBuffer();
 
 
+	// compute the composited
+	// face using the ps control points
 
-		 }
-		 glEnd();
+	glBegin(GL_TRIANGLES);
+	for(int i=0;i<object.getMesh(0).triangleCount*3;i++)
+	{
+		/*vertices[v[i]*3]=object.getVertexBuffer()[v[i]].position[0];
+		vertices[v[i]*3+1]=object.getVertexBuffer()[v[i]].position[1];
+		vertices[v[i]*3+2]=object.getVertexBuffer()[v[i]].position[2];
+		normals[v[i]*3]=object.getVertexBuffer()[v[i]].normal[0];
+		normals[v[i]*3+1]=object.getVertexBuffer()[v[i]].normal[1];
+		normals[v[i]*3+2]=object.getVertexBuffer()[v[i]].normal[2];*/
 
-		 glEnableClientState(GL_VERTEX_ARRAY);
-            glVertexPointer(3, GL_FLOAT, 0,
-                vertices);
+		linearcomb(ps,&vertices[v[i]*3],v[i]);
+		normals[v[i]*3]=object.getVertexBuffer()[v[i]].normal[0];
+		normals[v[i]*3+1]=object.getVertexBuffer()[v[i]].normal[1];
+		normals[v[i]*3+2]=object.getVertexBuffer()[v[i]].normal[2];
 
-			glEnableClientState(GL_NORMAL_ARRAY);
-            glNormalPointer(GL_FLOAT, 0,
-                normals);
 
-		glDrawElements(GL_TRIANGLES, object.getMesh(0).triangleCount * 3, GL_UNSIGNED_INT,
-            object.getIndexBuffer() + object.getMesh(0).startIndex);
 
-		glDisableClientState(GL_NORMAL_ARRAY);
-		glDisableClientState(GL_VERTEX_ARRAY);
+	}
+	glEnd();
 
-		 
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_FLOAT, 0,
+		vertices);
+
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glNormalPointer(GL_FLOAT, 0,
+		normals);
+
+	glDrawElements(GL_TRIANGLES, object.getMesh(0).triangleCount * 3, GL_UNSIGNED_INT,
+		object.getIndexBuffer() + object.getMesh(0).startIndex);
+
+	glDisableClientState(GL_NORMAL_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+
+
 
 
 	glPopMatrix();
 
 
-	}
+}
 
 
+// compute the linear combination for a given polygon / triangle index j
+// using control points p, buffer being u
 float linearcomb(double * p, float * u, int j)
 {
-	//int d=39;
 	*u=object.getVertexBuffer()[j].position[0];//vertices[j];
 	*(u+1)=object.getVertexBuffer()[j].position[1];
 	*(u+2)=object.getVertexBuffer()[j].position[2];

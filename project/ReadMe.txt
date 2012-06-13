@@ -1,45 +1,29 @@
 ﻿========================================================================
-   APPLICATION CONSOLE : Vue d'ensemble du projet project
+   Bachelor Project : Animation Database for Real-Time motion Reconstruction
 ========================================================================
 
-AppWizard a créé cette application project pour vous.
+Visual debugging tool
+ Yellow current best OLNG path (neighbors highlighted in green)
+ Orange minimization
+ Red other best paths
 
-Ce fichier contient un résumé des éléments contenus dans chaque fichier qui
-constitue votre application project.
+ For help about controls, press h on runtime
 
+    space - play
+    a - turn random error on/off
+    q/w - adjust error gain
+    l - display bilinear interpolation
+    o - switch neighbor sorting
+    r - reset and reload input
+    i - change input src
+    p - continusou play
+    c - display top paths
+	y - console debug
 
-project.vcxproj
-    Il s'agit du fichier projet principal pour les projets VC++ générés à 
-    l'aide d'un Assistant Application.
-    Il contient des informations relatives à la version de Visual C++ qui a 
-    généré le fichier, ainsi que des informations sur les plateformes, 
-    configurations et fonctionnalités du projet que vous avez sélectionnées dans
-    l'Assistant Application.
-
-project.vcxproj.filters
-    Il s'agit du fichier de filtres pour les projets VC++ générés à l'aide d'un 
-    Assistant Application. 
-    Il contient des informations sur l'association entre les fichiers de votre 
-    projet et les filtres. Cette association est utilisée dans l'IDE pour 
-    afficher le regroupement des fichiers qui ont des extensions similares sous 
-    un nœud spécifique (par exemple, les fichiers ".cpp" sont associés au 
-    filtre "Fichiers sources").
+model_view.cpp
+	Functions related to blendshapes rendering
 
 project.cpp
-    Il s'agit du fichier source principal de l'application.
-
-/////////////////////////////////////////////////////////////////////////////
-Autres fichiers standard :
-
-StdAfx.h, StdAfx.cpp
-    Ces fichiers sont utilisés pour générer un fichier d'en-tête précompilé 
-    (PCH) nommé project.pch et un fichier de types précompilés 
-    nommé StdAfx.obj.
-
-/////////////////////////////////////////////////////////////////////////////
-Autres remarques :
-
-AppWizard utilise des commentaires "TODO:" pour indiquer les parties du code 
-source où vous devrez ajouter ou modifier du code.
+    Everything else, initialization, update loop, visual debugging tool
 
 /////////////////////////////////////////////////////////////////////////////

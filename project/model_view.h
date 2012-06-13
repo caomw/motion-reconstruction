@@ -1,4 +1,6 @@
 #include <windows.h>
+#include "iostream"
+#include <fstream>
 #include <GL/gl.h>
 #include "GL/glut.h"
 #include "model_obj.h"

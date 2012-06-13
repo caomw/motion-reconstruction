@@ -27,97 +27,47 @@ glutWindow win;
 
 
 
-
-void cube (void) {
-    glRotatef(angle, 1.0, 0.0, 0.0);
-    glRotatef(angle, 0.0, 1.0, 0.0);
-    glRotatef(angle, 0.0, 0.0, 1.0);
-    glColor4f(1.0, 0.0, 0.0, 0.2); //set the color and alpha of the cube
-    glutSolidCube(2);
-    glColor4f(0.0, 1.0, 0.0, 0.5); //set the color and alpha of the cube
-    glutSolidCube(1);
-}
+bool aze=false;
+bool flag=false;
+int frm=0;
 
 
 
-ANNpoint next_pose=annAllocPt(d);
-	int in_t=0;
-	bool flag=false;
-
-	int frm=0;
-
-	
-
-	
-
-void display (void) {
-
-	frm++;
-	if(frm>1&&ready)
-	{
-	frm=0;
-	readn(*in,next_pose,d);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		cout << "Query pose :";
-		disp(next_pose);
-		for(int i=0;i<d;i++)
-			ps[i]=next_pose[i];
-		face_disp(0, ps);
-		cout << "\n";
-		kdtree->annkSearch(next_pose,k,nnseq[in_t],weseq[in_t],0);
-		for(int i=0;i<d;i++)
-			ps[i]=pts[nnseq[in_t][0]][i];
-		if(flag)
-		{
-			/*for(int i=0;i<k;i++)*/
-			/*fillcost(in_t, i);*/
-		}
-
-		in_t++;
-		in_t=in_t%128;
-		face_disp(1, ps);
-		glutSwapBuffers();
-	}
-
-   }
 
 
-
-double in_query[d], control_pts[d], ne[d];
 
 void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport (0, 0, w1w/4, w1h);
 	face_disp(0,in_query);
-	face_disp(1,control_pts);
-	face_disp(2,ne);
+	glViewport (w1w/4, 0, w1w/4, w1h);
+	face_disp(1, next_pose);
+	glViewport (2*w1w/4, 0, w1w/4, w1h);
+	face_disp(2,olng_ctrl);
+	glViewport (3*w1w/4, 0, w1w/4, w1h);
+	face_disp(3, rec_ctrl );
 	glutSwapBuffers();
 }
 
-int path[128][k], length[128][k];
-double  cost[128][k];
 
-	int bestindices[N];
 
-	double bestcosts[N];
+int sortdisp(int j, int i)
+{
+	return display_dist_ind?sortindices[j][i]:i;
+}
 
-	int partsortind[k];
+int sortdisp2(int j, int i)
+{
+	return display_dist_ind?sortindicesr[j][i]:i;
+}
+
 
 void draw2()
 {
-	
+	if(!ready)return;
 	glClear(GL_COLOR_BUFFER_BIT);
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_ONE, GL_ONE);
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	/*glLoadIdentity();
-	glViewport ( 0, 0, 200, 100 );
-	glMatrixMode ( GL_PROJECTION );
-	glLoadIdentity ();
-	gluOrtho2D ( 0.0, 1.0, 0.0, 1.0 );
-	glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );*/
-	//glClear ( GL_COLOR_BUFFER_BIT );
+
 
 	glBegin(GL_QUADS);
 
@@ -125,81 +75,121 @@ void draw2()
 
 	double x,y;
 
-	for(int i=0;i<k;i++)
+	//double * * gd;if(show_truedist)gd=query_c_dist;else gd=weseq;
+	double (* gd)[k]=query_c_dist;
+
+	for(int i2=0;i2<k-1;i2++)
 	{
-		y=1-(float)i/k;
-		for(int j=0;j<tsize;j++)
+		y=1-(float)i2/k;
+		for(int j=0;j<tsize-1;j++)
 		{
 			x=(float)j/tsize;
-			glColor3f(weseq[j][i],weseq[j][i],weseq[j][i]);
-	glVertex2f(x,y);//tmp=e(i+1,j);glColor3f(1.4*tmp,abs(v[_p(i+1,j)]),smoke[_p(i+1,j)]);
-    glVertex2f(x+x_,y);//tmp=e(i+1,j+1);glColor3f(1.4*tmp,abs(v[_p(i+1,j+1)]),smoke[_p(i+1,j+1)]);
-    glVertex2f(x+x_,y+y_);//tmp=e(i,j+1);glColor3f(1.4*tmp,abs(v[_p(i,j+1)]),smoke[_p(i,j+1)]);
-    glVertex2f(x,y+y_);
+			//glColor3f(weseq[j][i],weseq[j][i],weseq[j][i]);
+			//double dist_from_or=dist(pts[nnseq[j][i]],query_c[j],d);
+			int i=sortdisp(j,i2);
+			glColor3f(gd[j][i],gd[j][i],gd[j][i]);
+			glVertex2f(x,y);if(c_li)glColor3f(gd[j+1][i],gd[j+1][i],gd[j+1][i]);//glColor3f(gd[j+1][i],gd[j+1][i],gd[j+1][i]);
+			glVertex2f(x+x_,y);if(c_li)glColor3f(gd[j+1][i+1],gd[j+1][i+1],gd[j+1][i+1]);//glColor3f(gd[j+1][i+1],gd[j+1][i+1],gd[j+1][i+1]);
+			glVertex2f(x+x_,y-y_);if(c_li)glColor3f(gd[j][i+1],gd[j][i+1],gd[j][i+1]);//glColor3f(gd[j][i+1],gd[j][i+1],gd[j][i+1]);
+			glVertex2f(x,y-y_);
 
 		}
 	}
 
-	int l=length[in_t][i_cu];
+	int in_tpr=(in_t-1+tsize)%tsize;
+
+	int l=length[in_tpr][i_cu];
 	int pr_i=i_cu;
-	int pr_c=in_t;
+	int pr_c=in_tpr;
 	for (int i=0;i<l;i++)
 	{
-		glColor3f(0,1,0);//weseq[in_t][i],0);
+		glColor3f(0,1,0);
 		x=(float)pr_c/tsize;
-		y=1-(float)pr_i/k-(float)1/k;
-	glVertex2f(x,y);//tmp=e(i+1,j);glColor3f(1.4*tmp,abs(v[_p(i+1,j)]),smoke[_p(i+1,j)]);
-    glVertex2f(x+x_,y);//tmp=e(i+1,j+1);glColor3f(1.4*tmp,abs(v[_p(i+1,j+1)]),smoke[_p(i+1,j+1)]);
-    glVertex2f(x+x_,y+y_);//tmp=e(i,j+1);glColor3f(1.4*tmp,abs(v[_p(i,j+1)]),smoke[_p(i,j+1)]);
-    glVertex2f(x,y+y_);
-	pr_i=path[pr_c][pr_i];
-	pr_c=(pr_c-1+tsize)%tsize;
+		y=1-(float)sortdisp2(pr_c,pr_i)/k-(float)1/k;
+		glVertex2f(x,y);
+		glVertex2f(x+x_,y);
+		glVertex2f(x+x_,y+y_);
+		glVertex2f(x,y+y_);
+		pr_i=path[pr_c][pr_i];
+		pr_c=(pr_c-1+tsize)%tsize;
 	}
 
 	glEnd();
 
 	glEnable(GL_BLEND);
-glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-glBegin(GL_LINES);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glLineWidth(1);
+	glBegin(GL_LINES);
 	for(int i=0;i<tsize-1;i++)
 	{
 		glColor3f(0,1,(float)(abs(in_t-i)%tsize)/tsize);
-		x=(float)i/tsize;
-		y=1-(float)cho[i]/k-(float)1/k;
+		x=(float)(i+0.5)/tsize;
+		y=1-(float)sortdisp2(i,cho[i])/k-(float)1/k;
 		glVertex2f(x,y);
-		x=(float)(i+1)/tsize;
-		y=1-(float)cho[i+1]/k-(float)1/k;
+		x=(float)(i+0.5+1)/tsize;
+		y=1-(float)sortdisp2(i+1,cho[i+1])/k-(float)1/k;
 		glVertex2f(x,y);
+		glColor3f(1,0.5,(float)(abs(in_t-i)%tsize)/tsize);
+		x=(float)(i+0.5)/tsize;
+		y=1-(float)sortdisp2(i,l_pos[i])/k-(float)1/k;
+		glVertex2f(x,y);
+		x=(float)(i+0.5+1)/tsize;
+		y=1-(float)sortdisp2(i+1,l_pos[i+1])/k-(float)1/k;
+		glVertex2f(x,y);
+
 	}
 	glEnd();
 
 	glBegin(GL_LINES);
 	for(int i=0;i<N;i++)
 	{
-	int l=length[in_t][partsortind[i]];
-	int pr_i=partsortind[i];
-	int pr_c=in_t;
-	if(partsortind[i]==i_cu)
-		glColor3f(1,1,0);//weseq[in_t][i],0);
-	else
-		glColor3f(1.0*l/30,0,0);//weseq[in_t][i],0);
-	for (int j=0;j<l;j++)
-	{
-		//glColor3f(1,0,0);//weseq[in_t][i],0);
-		x=(float)pr_c/tsize;
-		y=1-(float)pr_i/k-(float)1/k;
-	glVertex2f(x,y);//tmp=e(i+1,j);glColor3f(1.4*tmp,abs(v[_p(i+1,j)]),smoke[_p(i+1,j)]);
-	pr_i=path[pr_c][pr_i];
-	pr_c=(pr_c-1+tsize)%tsize;
-	if(pr_c>x*tsize||pr_i==-1)
-		glVertex2f(x,y);
-	else{
-	x=(float)pr_c/tsize;
-		y=1-(float)pr_i/k-(float)1/k;
-		glVertex2f(x,y);}
+		int l=length[in_tpr][partsortind[i]];
+		int pr_i=partsortind[i];
+		int pr_c=in_tpr;
+		if(partsortind[i]==i_cu)
+			glColor3f(1,1,0);
+		else
+			glColor4f(1.0*l/30*5,0,0,1.0*l/50/10*(lines?10:1));
+		for (int j=0;j<l;j++)
+		{
+			x=(float)(pr_c+0.5)/tsize;
+			y=1-(float)sortdisp2(pr_c,pr_i)/k-(float)1/k;
+			glVertex2f(x,y);
+			pr_i=path[pr_c][pr_i];
+			pr_c=(pr_c-1+tsize)%tsize;
+			if(pr_c>x*tsize||pr_i==-1)
+				glVertex2f(x,y);
+			else{
+				x=(float)(pr_c+0.5)/tsize;
+				y=1-(float)sortdisp2(pr_c,pr_i)/k-(float)1/k;
+				glVertex2f(x,y);}
+		}
+
 	}
 
+	glEnd();
+
+	glBegin(GL_LINES);
+
+	l=length[oldi][oldj];
+	pr_i=oldj;
+	pr_c=oldi;
+	glColor3f(0,1,1);
+	for(int i=0;i<l&&pr_i!=-1;i++)
+	{
+
+		x=(float)(pr_c+0.5)/tsize;
+		y=1-(float)sortdisp2(pr_c,pr_i)/k-(float)1/k;
+		glVertex2f(x,y);
+
+		pr_i=path[pr_c][pr_i];
+		pr_c=(pr_c-1+tsize)%tsize;
+		if(pr_c>x*tsize||pr_i==-1)
+			glVertex2f(x,y);
+		else{
+			x=(float)(pr_c+0.5)/tsize;
+			y=1-(float)sortdisp2(pr_c,pr_i)/k-(float)1/k;
+			glVertex2f(x,y);}
 	}
 
 
@@ -209,14 +199,6 @@ glBegin(GL_LINES);
 
 }
 
-/*int path[128][k], length[128][k];
-double  cost[128][k];*/
-
-	/*int bestindices[N];
-
-	double bestcosts[N];*/
-
-	//int partsortind[k];
 
 
 int prevpos(int current)
@@ -249,31 +231,25 @@ double ds(double *p, double * u)
 }
 
 
-int current_path;
-
-
-double save[d];
-
-double cumul1,cumul2,cumul3;
 
 inline std::ostream& blue(std::ostream &s)
 {
-    HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE); 
-    SetConsoleTextAttribute(hStdout, FOREGROUND_BLUE
-              |FOREGROUND_GREEN|FOREGROUND_INTENSITY);
-    return s;
+	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE); 
+	SetConsoleTextAttribute(hStdout, FOREGROUND_BLUE
+		|FOREGROUND_GREEN|FOREGROUND_INTENSITY);
+	return s;
 }
 
 inline std::ostream& white(std::ostream &s)
 {
-    HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE); 
-    SetConsoleTextAttribute(hStdout, 
-       FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE);
-    return s;
+	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE); 
+	SetConsoleTextAttribute(hStdout, 
+		FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE);
+	return s;
 }
 
 
-double val[N];//50];
+
 
 double dist(double * v1, const double * v2, int co)
 {
@@ -286,28 +262,20 @@ double dist(double * v1, const double * v2, int co)
 }
 
 static lbfgsfloatval_t evaluate(
-    void *instance,
-    const lbfgsfloatval_t *x,
-    lbfgsfloatval_t *g,
-    const int n,
-    const lbfgsfloatval_t step
-    )
+	void *instance,
+	const lbfgsfloatval_t *x,
+	lbfgsfloatval_t *g,
+	const int n,
+	const lbfgsfloatval_t step
+	)
 {
-    int i;
-    lbfgsfloatval_t fx = 0.0;
+	int i;
+	lbfgsfloatval_t fx = 0.0;
 
-    for (i = 0;i < N;i ++) {
-		fx+=val[i]*dist(pts[bestindices[i]],x,d);//sqrt((x[i+1]-x[i]));
-			//cout << dist(pts[bestindices[i]],x,d) << "\n";//pts[nnseq[in_t][i]],x,d);
-			//cout << annDist(d,pts[bestindices[i]],x);
-        /*lbfgsfloatval_t t1 = 1.0 - x[i];
-        lbfgsfloatval_t t2 = 10.0 * (x[i+1] - x[i] * x[i]);
-        g[i+1] = 20.0 * t2;
-        g[i] = -2.0 * (x[i] * g[i+1] + t1);
-        fx += t1 * t1 + t2 * t2;*/
-    }
+	for (i = 0;i < N;i ++) {
+		fx+=val[i]*dist(pts[bestindices[i]],x,d);
+	}
 
-	//cout <<fx<<"\n";
 
 	double ithcm=0;
 
@@ -322,28 +290,28 @@ static lbfgsfloatval_t evaluate(
 		g[i]=ithcm;
 	}
 
-    return fx;
+	return fx;
 }
 
 
 static int progress(
-    void *instance,
-    const lbfgsfloatval_t *x,
-    const lbfgsfloatval_t *g,
-    const lbfgsfloatval_t fx,
-    const lbfgsfloatval_t xnorm,
-    const lbfgsfloatval_t gnorm,
-    const lbfgsfloatval_t step,
-    int n,
-    int k,
-    int ls
-    )
+	void *instance,
+	const lbfgsfloatval_t *x,
+	const lbfgsfloatval_t *g,
+	const lbfgsfloatval_t fx,
+	const lbfgsfloatval_t xnorm,
+	const lbfgsfloatval_t gnorm,
+	const lbfgsfloatval_t step,
+	int n,
+	int k,
+	int ls
+	)
 {
-    //printf("Iteration %d:\n", k);
-    //printf("  fx = %f, x[0] = %f\n", fx, x[0]);
-    //printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
-    //printf("\n");
-    return 0;
+	//printf("Iteration %d:\n", k);
+	//printf("  fx = %f, x[0] = %f\n", fx, x[0]);
+	//printf("  xnorm = %f, gnorm = %f, step = %f\n", xnorm, gnorm, step);
+	//printf("\n");
+	return 0;
 }
 
 
@@ -352,29 +320,131 @@ bool comp(int a, int b)
 	return pt_cost(cost[in_t][a],length[in_t][a])<pt_cost(cost[in_t][b],length[in_t][b]);
 }
 
-void update()
+int dich_b(double x, double * t, int a, int b);//, int i)
+
+int dichotomy(double x, double * t, int i)
 {
-	//display();
-	if(!play) return; else play=false;
-	if(!ready) return;
-	readn(*in,next_pose,d);
+	int r=0;
+	if(x>t[i/2])
+		r= dich_b(x,t,i/2+1,i-1);
+	else
+		r= dich_b(x,t,0,i/2);
+	return r;
+}
+
+int dich_b(double x, double * t, int a, int b)//, int i)
+{
+	int r=0;
+	if(a>=b)
+	{
+		r= a;
+	}
+	else
+	{
+		if(x>t[(a+b)/2])
+			r=dich_b(x,t,(a+b)/2+1,b);
+		else
+			r=dich_b(x,t,a,(a+b)/2);
+	}
+	return r;
+}
+
+bool comparewe(int a,int b)
+{
+	return nnseq[in_t][a]>nnseq[in_t][b];
+}
+
+double PCFreq = 0.0;
+__int64 CounterStart = 0;
+
+void StartCounter()
+{
+	LARGE_INTEGER li;
+	if(!QueryPerformanceFrequency(&li))
+		cout << "QueryPerformanceFrequency failed!\n";
+
+	PCFreq = double(li.QuadPart)/1000.0;
+
+	QueryPerformanceCounter(&li);
+	CounterStart = li.QuadPart;
+}
+double GetCounter()
+{
+	LARGE_INTEGER li;
+	QueryPerformanceCounter(&li);
+	return double(li.QuadPart-CounterStart)/PCFreq;
+}
+
+
+ofstream errf;
+
+
+void minimize()
+{
+}
+
+
+// modify input (next_pose) by adding noise
+// or disable control points according to the map
+
+void noise_modinput()
+{
 	for(int i=0;i<d;i++)
 	{
 		save[i]=next_pose[i];
-	//double n=(double)rand()/RAND_MAX/8-0.125;//06;///5-0.1250;
-	//next_pose[i]=next_pose[i]+n;
-	double n=(double)rand()/RAND_MAX/4-0.025;//06;///5-0.1250;
-	next_pose[i]=min(max(next_pose[i]+n,0),1);
+		double n=(double)rand()/RAND_MAX/8*amount-0.025;//06;///5-0.1250;
+		if(randomize_input)
+			next_pose[i]=min(max(next_pose[i]+n,0),1);
+		next_pose[i]=mapping[i]?next_pose[i]:0;
 	}
 
-	//cout << "Query pose :";
-	//disp(next_pose);
+}
+
+void update()
+{
+
+	
+	if(!play) return; else if(!aze) play=false;
+	if(!ready) return;
+	readn(*in,next_pose,d);
+	noise_modinput();
+
+
+	StartCounter(); // Accurate timer to compute performance
+
+
+	// Kd tree search ( on pts2 )
 	kdtree->annkSearch(next_pose,k,nnseq[in_t],weseq[in_t],0);
+
+
+	// We can compute the real distance between actual corresponding database points and the non changed input save
+	for(int i=0;i<k;i++)
+		query_c_dist[in_t][i]=dist(pts[nnseq[in_t][i]],save,d);
+
+
+	// Display kd tree search performance
+	cout << "Kd Tree Search : " << GetCounter() << "\n";
+
 	
+	// Compute and store the permutation matrix of the neighbors in order to be
+	// able to later show them in the visual debugging tool by their
+	// frame indices or distance
+	for(int i=0;i<k;i++) sortindices[in_t][i]=i;
+	sort(sortindices[in_t],sortindices[in_t]+k-1,comparewe);
+
+	for(int i=0;i<k;i++) sortindicesr[in_t][sortindices[in_t][i]]=i;
+
 	
-	//char c=getchar();
+	// Display best nearest neighbor index
 	cout << nnseq[in_t][0] << "-\n";
 
+
+	StartCounter();
+
+	/*
+	OLNG update
+
+	*/
 
 	double tmp;
 	int prev_n;
@@ -410,191 +480,215 @@ void update()
 		}
 	}
 
+	// Compute the best frame according to the OLNG
+
 	tmp=100000000;
 	int best_choice=0;
 	for(int i=0;i<k;i++)
 	{
 		double c;
-		if(path[in_t][i]==current_path) c=pt_cost(cost[in_t][i],length[in_t][i]);///200;///1.4;
+		if(path[in_t][i]==current_path) c=pt_cost(cost[in_t][i],length[in_t][i])*coeff_remain;
 		else c=pt_cost(cost[in_t][i],length[in_t][i]);
 		//if(length[in_t][i]!=0)
 		{
-		if(c<tmp)
-		{
-			tmp=c;
-			best_choice=i;
-		}
+			if(c<tmp)
+			{
+				tmp=c;
+				best_choice=i;
+			}
 		}
 		/*else
 		{
-			if(cost[in_t][i]<tmp)
-			{
-				tmp=cost[in_t][i];
-				best_choice=i;
-			}
+		if(cost[in_t][i]<tmp)
+		{
+		tmp=cost[in_t][i];
+		best_choice=i;
+		}
 		}*/
 	}
 
 
-	if(show_t)//c=='o')
-	for(int j=0;j<10;j++)
-	{
-		for(int i=0;i<tsize;i++)
+	// Whether to display the
+	// console debugging array
+
+	if(show_t)
+		for(int j=0;j<10;j++)
 		{
-			if(i==in_t)
-				cout <<blue << path[i][j] << " ";
-			else
-			cout << white << path[i][j] << " ";
+			for(int i=0;i<tsize;i++)
+			{
+				if(i==in_t)
+					cout <<blue << path[i][j] << " ";
+				else
+					cout << white << path[i][j] << " ";
+			}
+			cout << "\n";
 		}
-		cout << "\n";
-	}
 
-	current_path=best_choice;
+		current_path=best_choice;
 
+		cout << "Update OLNG : " << GetCounter() << "\n"; //GetTickCount()-teff << "\n";
 
-	for(int i=0;i<d;i++)
+		for(int i=0;i<d;i++)
 			ps[i]=pts[nnseq[in_t][best_choice]][i];
-	for(int i=0;i<d;i++)
-	{
-		in_query[i]=next_pose[i];
-		control_pts[i]=ps[i];
-		ne[i]=pts[nnseq[in_t][0]][i];
-	}
 
-	cout << nnseq[in_t][best_choice] << "\n";
-
-	cout << "erreur sur neighbor :" << ds(pts[nnseq[in_t][0]],save) << "\n";
-	cout << "erreur sur oln :" << ds(pts[nnseq[in_t][best_choice]],save) << "\n";
-	cout << "longueur oln :" << length[in_t][best_choice] << "\n";
-	cout << "erreur cumulée sur neighbor :" << cumul1 << "\n";
-	cout << "erreur cumulée sur oln :" << cumul2 << "\n";
-
-
-
-	for(int i=0;i<k;i++)
-		partsortind[i]=i;//nnseq[i];
-
-	nth_element(partsortind,partsortind+N,partsortind+k,comp);
-
-	for(int i=0;i<N;i++)
-	{
-		bestindices[i]=nnseq[in_t][partsortind[i]];
-		bestcosts[i]=pt_cost(cost[in_t][partsortind[i]],length[in_t][partsortind[i]]);
-	}
-
-
-	//int ni=50;
-	double wi[N];//50];
-
-	double max=0;
-
-	for(int i=0;i<N;i++)//50;i++)
-	{
-		if(bestcosts[i]>max)//pt_cost(cost[in_t][i],length[in_t][i])>max)
+		// we store the different control points to show the blendshapes later
+		// in the drawing functions
+		for(int i=0;i<d;i++)
 		{
-			max=bestcosts[i];//pt_cost(cost[in_t][i],length[in_t][i]);
+			in_query[i]=save[i];
+			olng_ctrl[i]=ps[i];
+			rec_ctrl[i]=pts[nnseq[in_t][0]][i];
 		}
-	}
-
-	double sum=0;
-	for(int i=0;i<N;i++)//50;i++)
-	{
-			sum+=max-bestcosts[i];//pt_cost(cost[in_t][i],length[in_t][i]);
-	}
-
-	if(sum>0.000001)
-	{
-
-	for(int i=0;i<N;i++)//50;i++)
-	{
-			wi[i]=(max-bestcosts[i])/sum;//pt_cost(cost[in_t][i],length[in_t][i]))/sum;//+=max-pt_cost(cost[in_t][i],length[in_t][i]);
-	}
 
 
-	for(int i=0;i<N;i++)//50;i++)
-		val[i]=wi[i];
+		StartCounter();
+
+		for(int i=0;i<k;i++)
+			partsortind[i]=i;//nnseq[i];
+
+		// instead of sorting the array to extract the top elements, we just do a partial search
+		// we leave data unchanged but instead create a permutation vector that we use
+		// to compute bestindices and bestcosts
+
+		nth_element(partsortind,partsortind+N,partsortind+k,comp);
+
+		for(int i=0;i<N;i++)
+		{
+			bestindices[i]=nnseq[in_t][partsortind[i]];
+			bestcosts[i]=pt_cost(cost[in_t][partsortind[i]],length[in_t][partsortind[i]]);
+		}
+
+		/* Energy minimization */
+
+		// local normalized weights
+		double wi[N];
+
+		double max=0;
+
+		// Compute the max cost of the paths
+
+		for(int i=0;i<N;i++)
+		{
+			if(bestcosts[i]>max)
+			{
+				max=bestcosts[i];
+			}
+		}
+
+		double sum=0;
+		for(int i=0;i<N;i++)
+		{
+			sum+=max-bestcosts[i];
+		}
+
+		if(sum>0.000001)
+		{
+
+			for(int i=0;i<N;i++)
+			{
+				wi[i]=(max-bestcosts[i])/sum;
+			}
+		}
+
+		// we store the weights to use them in the evaluate
+		// part of the minimization func
+		for(int i=0;i<N;i++)
+			val[i]=wi[i];
 
 
-	cumul1+=ds(pts[nnseq[in_t][0]],save);
-	cumul2+=ds(pts[nnseq[in_t][best_choice]],save);
-
-	//int N=d;//50;
-
-	//?
-
-	int i, ret = 0;
-    lbfgsfloatval_t fx;
-    lbfgsfloatval_t *x = lbfgs_malloc(d);
-    lbfgs_parameter_t param;
+		int i, ret = 0;
+		lbfgsfloatval_t fx;
+		lbfgsfloatval_t *x = lbfgs_malloc(d);
+		lbfgs_parameter_t param;
 
 
-	/*for (i = 0;i < N;i += 2) {
-        x[i] = 0.8;
-        x[i+1] = 0.8;
-    }*/
+		// The optimization problen is initialized with the best OLNG frame
 
-	for(i=0;i<d;i++)
-	{
-		x[i]=pts[nnseq[in_t][best_choice]][i];
-	}
+		for(i=0;i<d;i++)
+		{
+			x[i]=pts[nnseq[in_t][best_choice]][i];
+		}
 
-    lbfgs_parameter_init(&param);
+		lbfgs_parameter_init(&param);
 
 
-	//int ret = lbfgs(N, m_x, &fx, _evaluate, NULL, this, NULL);
-	ret = lbfgs(d, x, &fx, evaluate, progress, NULL, &param);
+		ret = lbfgs(d, x, &fx, evaluate, progress, NULL, &param);
 
-	cout << ret;
+		cout << ret;
+		cout << " return value\n"; // Whether there was an error, can occur smtime
 
-	for(int i=0;i<d;i++)
-	{
-		ne[i]=x[i];
-	}
+		for(int i=0;i<d;i++)
+		{
+			rec_ctrl[i]=x[i];
+		}
 
-	cout << "erreur sur l :" << ds(x,save) << "\n";
-	cout << "erreur cumulée sur l :" << cumul3 << "\n";
-	cumul3+=ds(x,save);
+		cout << "Energy minimization : " << GetCounter() << "\n"; //GetTickCount()-teff << "\n";
+
+		l_pos[in_t]=dichotomy(dist(rec_ctrl,save,d),query_c_dist[in_t],k);
+		for(int i=0;i<k;i++)
+			query_c_dist[in_t][i]=log(1+query_c_dist[in_t][i]);
 
 
-	}
+		cumul1+=ds(pts[nnseq[in_t][0]],save);
+		cumul2+=ds(pts[nnseq[in_t][best_choice]],save);
+		cumul4+=ds(next_pose,save);
 
-	i_cu=best_choice;
-	cho[in_t]=i_cu;
+		cout << "Best frame using OLNG :";
+		cout << nnseq[in_t][best_choice] << "\n";
 
-	
+		cout << "-----------------------";
+		cout << "\n";
+		cout << "longueur oln :" << length[in_t][best_choice] << "\n";
+		cout << "erreur bruit :" << ds(next_pose,save) << "\n";
+		cout << "erreur sur neighbor :" << ds(pts[nnseq[in_t][0]],save) << "\n";
+		cout << "erreur sur oln :" << ds(pts[nnseq[in_t][best_choice]],save) << "\n";
+		cout << "erreur sur l :" << ds(x,save) << "\n";
+		//cout << "longueur oln :" << length[in_t][best_choice] << "\n";
+		cout << "erreur cumulée sur bruit :" << cumul4 << "\n";
+		cout << "erreur cumulée sur neighbor :" << cumul1 << "\n";
+		cout << "erreur cumulée sur oln :" << cumul2 << "\n";
+		cout << "erreur cumulée sur l :" << cumul3 << "\n";
+		cout << "-----------------------";
+		cout << "\n";
+		errf << length[in_t][best_choice] << "," << ds(next_pose,save) << "," << ds(pts[nnseq[in_t][0]],save) << "," << ds(pts[nnseq[in_t][best_choice]],save) << "," << ds(x,save) << "\n";
+		cumul3+=ds(x,save);
 
-	glutSetWindow(w1);
-	draw();
-	glutSetWindow(w2);
-	draw2();
 
-	in_t++;
-	in_t%=tsize;
-	/*glutSetWindow(w1);
-	draw();
-	glutSetWindow(w2);
-	draw2();*/
-	//glutPostRedisplay();
+		
+
+		i_cu=best_choice;
+		cho[in_t]=i_cu;
+
+
+
+		in_t++;
+		in_t%=tsize;
+		glutSetWindow(w1);
+		draw();
+		glutSetWindow(w2);
+		draw2();
+
 
 
 }
 
 void reshape (int w, int h) {
-    glViewport (0, 0, (GLsizei)w, (GLsizei)h);
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity ();
-    gluPerspective (30, (GLfloat)w / (GLfloat)h, 1.0, 1000.0)
-;
-    glMatrixMode (GL_MODELVIEW);
+	w1h=h;
+	w1w=w;
+	glViewport (0, 0, (GLsizei)w, (GLsizei)h);
+	glMatrixMode (GL_PROJECTION);
+	glLoadIdentity ();
+	gluPerspective (30, (GLfloat)w / (GLfloat)h/4, 1.0, 1000.0)
+		;
+	glMatrixMode (GL_MODELVIEW);
 }
 
 void reshape2 (int w, int h) {
-    /*glViewport (0, 0, (GLsizei)w, (GLsizei)h);
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity ();
-    gluPerspective (30, (GLfloat)w / (GLfloat)h, 1.0, 1000.0)
-;
-    glMatrixMode (GL_MODELVIEW);*/
+
+
+	w2_h=h;
+	w2_w=w;
+
 
 	glLoadIdentity();
 	glViewport ( 0, 0, w, h );
@@ -610,34 +704,34 @@ void reshape2 (int w, int h) {
 
 void initialize () 
 {
-    glMatrixMode(GL_PROJECTION);
+	glMatrixMode(GL_PROJECTION);
 	glViewport(0, 0, win.width, win.height);
 	GLfloat aspect = (GLfloat) win.width / win.height;
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
 	gluPerspective(win.field_of_view_angle, aspect, win.z_near, win.z_far);
-    glMatrixMode(GL_MODELVIEW);
-    glShadeModel( GL_SMOOTH );
-    glClearColor( 0.0f, 0.1f, 0.0f, 0.5f );
-    glClearDepth( 1.0f );
-    glEnable( GL_DEPTH_TEST );
-    glDepthFunc( GL_LEQUAL );
-    glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
- 
-    GLfloat amb_light[] = { 0.1, 0.1, 0.1, 1.0 };
-    GLfloat diffuse[] = { 0.6, 0.6, 0.6, 1 };
-    GLfloat specular[] = { 0.7, 0.7, 0.3, 1 };
-    glLightModelfv( GL_LIGHT_MODEL_AMBIENT, amb_light );
-    glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuse );
-    glLightfv( GL_LIGHT0, GL_SPECULAR, specular );
-    glEnable( GL_LIGHT0 );
-    glEnable( GL_COLOR_MATERIAL );
-    glShadeModel( GL_SMOOTH );
-    glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_FALSE );
-    glDepthFunc( GL_LEQUAL );
-    glEnable( GL_DEPTH_TEST );
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0); 
+	glMatrixMode(GL_MODELVIEW);
+	glShadeModel( GL_SMOOTH );
+	glClearColor( 0.0f, 0.1f, 0.0f, 0.5f );
+	glClearDepth( 1.0f );
+	glEnable( GL_DEPTH_TEST );
+	glDepthFunc( GL_LEQUAL );
+	glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
+
+	GLfloat amb_light[] = { 0.1, 0.1, 0.1, 1.0 };
+	GLfloat diffuse[] = { 0.6, 0.6, 0.6, 1 };
+	GLfloat specular[] = { 0.7, 0.7, 0.3, 1 };
+	glLightModelfv( GL_LIGHT_MODEL_AMBIENT, amb_light );
+	glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuse );
+	glLightfv( GL_LIGHT0, GL_SPECULAR, specular );
+	glEnable( GL_LIGHT0 );
+	glEnable( GL_COLOR_MATERIAL );
+	glShadeModel( GL_SMOOTH );
+	glLightModeli( GL_LIGHT_MODEL_TWO_SIDE, GL_FALSE );
+	glDepthFunc( GL_LEQUAL );
+	glEnable( GL_DEPTH_TEST );
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0); 
 }
 
 
@@ -649,48 +743,176 @@ void mouse(int x, int y)
 }
 
 
+
+
+void mouse2(int x, int y)
+{
+	int i=(float)x/w2_w*tsize;
+	int j=sortdisp(i,(float)y/w2_h*k);//(float)y/w2_h*k;
+	if(i!=oldi||j!=oldj)
+	{
+
+		cout << i << " " << j << "\n";
+		cout << "index : " << nnseq[i][j] << "\n";
+		cout << "poids : " << weseq[i][j] << "\n";
+		cout << "longueur : " << length[i][j] << "\n";
+		cout << "coût edges : " << cost[i][j] << "\n";
+		cout << "coût path : " << pt_cost(cost[i][j],length[i][j]) << "\n";
+	}
+	oldi=i;
+	oldj=j;//oldj=j;
+	draw2();
+}
+
 void key(unsigned char ch, int x, int y)
 {
 	if(ch==' ')
 	{
 		play=true;
 	}
+	if(ch=='a')
+	{
+		randomize_input=!randomize_input;
+	}
+	if(ch=='t')
+		show_truedist=!show_truedist;
+	if(ch=='y')
+		show_t=!show_t;
+	if(ch=='d')
+		dispindices=!dispindices;
+	if(ch=='r')
+	{
+		file.close();
+		file.open(input[in_n],ios::in);
+		
+		if(!file) printf("Error loading file");
+		in=&file;
+		in_t=0;
+		for(int i=0;i<tsize;i++)
+			for(int j=0;j<k;j++)
+			{
+				cho[i]=0;
+				path[i][j]=-1;
+				cost[i][j]=0;
+				length[i][j]=0;
+				nnseq[i][j]=-1;
+				weseq[i][j]=0;
+				query_c_dist[i][j]=0;
+			}
+
+			cumul1=0;
+			cumul2=0;
+			cumul3=0;
+
+			glutPostWindowRedisplay(w1);
+			glutPostWindowRedisplay(w2);
+
+	}
+	if(ch=='q')
+	{
+		amount-=0.1;
+		cout << "noise g :"<<amount;
+	}
+	if(ch=='w')
+	{
+		amount+=0.1;
+		cout << "noise g :"<<amount;
+	}
+	if(ch=='i')
+	{
+		in_n++;
+		in_n=in_n%2;
+		cout << input[in_n] << "\n";
+	}
+	if(ch=='l')
+	{
+		c_li=!c_li;
+		glutPostWindowRedisplay(w2);
+	}
+	if(ch=='o')
+	{
+		display_dist_ind=!display_dist_ind;
+		glutPostWindowRedisplay(w2);
+	}
+	if(ch=='c')
+	{
+		lines=!lines;
+		glutPostWindowRedisplay(w2);
+	}
+	if(ch=='h')
+	{
+		cout << "      space - play \n     ";
+		cout << " a - turn random error on/off \n     ";
+		cout << " q/w - adjust error gain \n     ";
+		cout << " l - display bilinear interpolation \n     ";
+		cout << " o - switch neighbor sorting \n     ";
+		cout << " r - reset and reload input \n     ";
+		cout << " i - change input src \n     ";
+		cout << " p - continusou play \n     ";
+		cout << " c - display top paths \n";
+	}
+	if(ch=='k')
+	{
+		// display different blendshapes
+		int c;
+		//c=rand()*d/RAND_MAX;
+		pose_display_c++;
+		pose_display_c%=d;
+		for(int i=0;i<d;i++)
+			olng_ctrl[i]=i==pose_display_c?1:0;
+		draw();
+	}
+	if(ch=='p')
+	{
+		aze=!aze;
+		play=aze;
+	}
+
 }
 
 int _tmain(int argc, char * argv[])
 {
 
+	errf.open("error.csv");
+	errf << "Longueur OLNG,Noise,Error Nearest Neighbor, Error OLN, Minimizatio\n";
+
+	if(lowdim)
+		for(int i=0;i<13;i++)
+			mapping[indices_lowin[i]-1]=0;
+
 	win.width = 640;
 	win.height = 480;
-	win.title = "OpenGL/GLUT OBJ Loader.";
+	win.title = "";
 	win.field_of_view_angle = 45;
 	win.z_near = 1.0f;
 	win.z_far = 500.0f;
 
 
-	static ifstream file;
-	file.open("../data/faceAnimationDatabase/faceAnimationDatabase/bla.txt",ios::in);
+	//static ifstream file;
+	file.open("../data/facerobot3b.txt",ios::in);
 	if(!file) printf("Error loading file");
 	in=&file;
 
 	glutInit (&argc, argv);
-    glutInitDisplayMode (GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH); //set thealpha buffer
-    glutInitWindowSize (1000, 500);
-    glutInitWindowPosition (100, 100);
-    w1=glutCreateWindow ("Computer Graphics");
-    glutDisplayFunc (draw);
-    glutIdleFunc (update);
-    glutReshapeFunc (reshape);
+	glutInitDisplayMode (GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH); //set thealpha buffer
+	glutInitWindowSize (1300, 400);//(1000, 500);
+	glutInitWindowPosition (100, 100);
+	w1=glutCreateWindow ("Computer Graphics Bachelor project demo");
+	glutDisplayFunc (draw);
+	glutIdleFunc (update);
+	glutReshapeFunc (reshape);
 	glutMotionFunc(mouse);
 	glutKeyboardFunc(key);
 	initialize();
 
-	glutInitWindowSize (200, 100);
-    glutInitWindowPosition (1000, 100);
-	w2=glutCreateWindow ("Visu");
-    glutDisplayFunc (draw2);
+	glutInitWindowSize (1300,300);//(400,200);//(200, 100);
+	glutInitWindowPosition (100,550);//(1200, 100);
+	w2=glutCreateWindow ("Debugging tool");
+	glutDisplayFunc (draw2);
 	glutReshapeFunc (reshape2);
-    glutIdleFunc (update);
+	glutMotionFunc (mouse2);
+	glutKeyboardFunc(key);
+	glutIdleFunc (update);
 	glLoadIdentity();
 	glViewport ( 0, 0, 200, 100 );
 	glMatrixMode ( GL_PROJECTION );
@@ -703,39 +925,28 @@ int _tmain(int argc, char * argv[])
 
 	glutSetWindow(w1);
 
-	
+
 	load();
 
 	pts=annAllocPts(maxpts,d);
+	pts2=annAllocPts(maxpts,d);
 	char * u = new char [200];
 	for(int i=1;i<24+1;i++)
 	{
 		sprintf(u,"../data/faceAnimationDatabase/faceAnimationDatabase/data_%d.txt",i);
-	//load("../data/faceAnimationDatabase/faceAnimationDatabase/data_22.txt");
 		load(u);
 	}
 	for(int i=25;i<60+1;i++)
 	{
 		sprintf(u,"../data/faceAnimationDatabase/faceAnimationDatabase/synthetic/data_%d.txt",i);
-	//load("../data/faceAnimationDatabase/faceAnimationDatabase/data_22.txt");
 		load(u);
 	}
 
-	kdtree=new ANNkd_tree(pts,nbpts,d);
+	kdtree=new ANNkd_tree(pts2,nbpts,d);
 	ready=true;
+
 	
-	cout << -2%3;
-	/*indices=new ANNidx[nbpts];
-	c=new ANNdist[nbpts];
-	ANNpoint q=annAllocPt(d);
-	q[0]=2;q[1]=0.5;
-	kdtree->annkSearch(q,k,indices,c,0);
-	for(int i=0;i<k&&i<10;i++)
-	{
-		disp(pts[indices[i]]);
-		cout << " : " << c[i];
-		cout << "\n";
-	}*/
+	
 	for(int i=0;i<tsize;i++)
 	{
 		nnseq[i]=new ANNidx[k];
@@ -750,118 +961,38 @@ int _tmain(int argc, char * argv[])
 			length[i][j]=0;
 			nnseq[i][j]=-1;
 		}
-	glutMainLoop ();
-	//compare("../data/facerobot3b.txt");
-	/*ANNpoint next_pose=annAllocPt(d);
-	int in_t=0;
-	bool flag=false;
-	while(readn(cin,next_pose,d))
-	{
-		cout << "Query pose :";
-		disp(next_pose);
-		cout << "\n";
-		kdtree->annkSearch(next_pose,k,nnseq[in_t],weseq[in_t],0);
-		for(int i=0;i<k&&i<10;i++)
-	{
-		disp(pts[nnseq[in_t][i]]);
-		cout << " : " << weseq[in_t][i];
-		cout << "\n";
-	}
-
-		for(int j=0;j<10;j++)
-		{
-			cout << "\n";
-		for(int i=0;i<in_t+1;i++)
-		{
-			cout << nnseq[i][j] << "\t";
-		}
-		}
-
-		if(flag)
-		{
-			for(int i=0;i<k;i++)
-			fillcost(in_t, i);
-		}
-
-		in_t++;
-		in_t=in_t%128;
-		flag=true;
-	}*/
-	getchar();
-	/*delete[] indices;
-	delete[] c;*/
-	delete[] nnseq;
-	delete[] weseq;
-	annClose();
-	return 0;
+		glutMainLoop ();
+		
+		getchar();
+		/*delete[] indices;
+		delete[] c;*/
+		delete[] nnseq;
+		delete[] weseq;
+		annClose();
+		return 0;
 }
 
 
-int stepsize=2;
-int cond=5;
 
 int _(int i)
 {
 	return (i+128)%128;
 }
 
-/*void fillcost(int i, int j)
-{
-	int j1=j-1,j2=j,j3=j+1;
-	int count=0;
-	double weight;
-	double mweight=LONG_MAX;
-	for(int n=0;n<k;n++)
-	{
-		for(int r=0;r<2;r++)
-		{
-			if(nnseq[_(i-1-r)][n]<=nnseq[i][j]) // monotonous
-				if(nnseq[_(i-1-r)][n]>nnseq[i][j]-5) // boundaries on indices
-				{
-					//weight=annDist(d,pts[nnseq[_(i-1-r)][n]],pts[nnseq[i][j]]);
-					weight=weseq[i][j];
-					if(weight<mweight)
-					{
-						mweight=weight;
-						path[i][j][0]=nnseq[_(i-1-r)][n];
-					}
-				}
-		}
-		/*
-		DTW
-		if(nnseq[i-1][i]==nnseq[i][j])
-		{
-			path[i-1][i][1]=nnseq[i][j];
-			count++;
-		}
-		else if(nnseq[i-1][i]==nnseq[i][j]-1)
-		{
-			path[i-1][i][2]=nnseq[i][j];
-			count++;
-		}
-		else if(nnseq[i-1][i]==nnseq[i][j]+1)
-		{
-			path[i-1][i][0]=nnseq[i][j];
-			count++;
-		}*/
-/*
-	}*/
-	/*if(j1>=0)
-		path[i-1][j1][2]=annDist(d,pts[nnseq[i-1][j1]],pts[nnseq[i][j]]);
-	path[i-1][j2][1]=annDist(d,pts[nnseq[i-1][j2]],pts[nnseq[i][j]]);
-	if(j3<k)
-		path[i-1][j3][0]=annDist(d,pts[nnseq[i-1][j3]],pts[nnseq[i][j]]);*/
-/*}*/
 
+// Read next vector
 bool readn(istream &in, ANNpoint pt, int dim)
 {
 	for(int i=0;i<dim;i++)
 		if(!(in>>pt[i])) return false;
+	if(!lowdim&&removeeye)
 	for(int i=0;i<10;i++)
 		pt[i]=0;
 	return true;
 }
 
+
+// Load (append) a file within the database
 bool load(char * file_name)
 {
 	ifstream file;
@@ -869,61 +1000,13 @@ bool load(char * file_name)
 	if(!file) printf("Error loading file");
 	while(nbpts<maxpts&&readn(file,pts[nbpts],d))
 	{
+		for(int i=0;i<d;i++)
+			pts2[nbpts][i]=mapping[i]?pts[nbpts][i]:0;
 		nbpts++;
 	}
 	return 1;                          
 }
 
-bool compare(char * file_name)
-{
-	static ifstream file;
-	file.open(file_name,ios::in);
-	if(!file) printf("Error loading file");
-	in=&file;
-
-	ANNpoint next_pose=annAllocPt(d);
-	int in_t=0;
-	bool flag=false;
-
-	while(readn(*in,next_pose,d))
-	{
-		cout << "Query pose :";
-		disp(next_pose);
-		cout << "\n";
-		kdtree->annkSearch(next_pose,k,nnseq[in_t],weseq[in_t],0);
-		/*for(int i=0;i<k&&i<d;i++)
-	{
-		disp(pts[nnseq[in_t][i]]);
-		cout << " : " << weseq[in_t][i];
-		cout << "\n";
-	}
-
-		for(int j=0;j<10;j++)
-		{
-			cout << "\n";
-		for(int i=0;i<in_t+1;i++)
-		{
-			cout << nnseq[i][j] << "\t";
-		}
-		}*/
-
-		getchar();
-
-		if(flag)
-		{
-			/*for(int i=0;i<k;i++)*/
-			/*fillcost(in_t, i);*/
-		}
-
-		in_t++;
-		in_t=in_t%128;
-		flag=true;
-	}
-
-
-	return 1;                          
-
-}
 
 bool disp(ANNpoint p)
 {
